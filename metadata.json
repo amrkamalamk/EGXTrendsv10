@@ -1,0 +1,5 @@
+{
+  "name": "EGX-Trends",
+  "description": "Real-time style analysis of EGX 30 stocks with Candlestick charts, MACD, and VWAP indicators using Gemini AI for data extraction and simulation.",
+  "requestFramePermissions": []
+}
