@@ -4,6 +4,28 @@ import { Stock, MarketIndex, AnalysisData, DailyStat } from "../types";
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
+// --- API USAGE TRACKING ---
+let apiCallCount = 0;
+export const DAILY_QUOTA = 1500; // Gemini 1.5 Flash Free Tier Daily Limit
+
+type Listener = (count: number) => void;
+const listeners: Listener[] = [];
+
+export const onApiUsageUpdate = (fn: Listener) => {
+    listeners.push(fn);
+    fn(apiCallCount); // Send current immediately
+    return () => {
+        const idx = listeners.indexOf(fn);
+        if (idx !== -1) listeners.splice(idx, 1);
+    };
+};
+
+const trackCall = () => {
+    apiCallCount++;
+    listeners.forEach(fn => fn(apiCallCount));
+};
+// --------------------------
+
 // Cache to prevent re-fetching the list constantly during a session
 let cachedStockList: Stock[] | null = null;
 
@@ -115,6 +137,7 @@ export const fetchEGX30List = async (forceRefresh: boolean = false): Promise<Sto
   if (cachedStockList && !forceRefresh) return cachedStockList;
 
   try {
+    trackCall(); // Count API Usage
     const model = "gemini-2.5-flash"; 
     const response = await ai.models.generateContent({
       model,
@@ -226,6 +249,7 @@ export const fetchMarketAnalysis = async (indexType: MarketIndex): Promise<Analy
             `;
 
             try {
+                trackCall(); // Count API Usage
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
                     contents: prompt,

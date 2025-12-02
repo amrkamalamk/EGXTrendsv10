@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Stock, TimeFrame, MarketIndex, AnalysisData } from './types';
-import { cleanSymbol, EGX30_FALLBACK, fetchMarketAnalysis } from './services/geminiService';
+import { cleanSymbol, EGX30_FALLBACK, fetchMarketAnalysis, onApiUsageUpdate, DAILY_QUOTA } from './services/geminiService';
 import TradingViewWidget from './components/TradingViewWidget';
 import AnalysisTable from './components/AnalysisTable';
-import { BarChart2, Search, ArrowLeft, Play, RefreshCw, AlertTriangle, FileText, Table, Activity } from 'lucide-react';
+import { BarChart2, Search, ArrowLeft, Play, RefreshCw, AlertTriangle, FileText, Table, Activity, Zap } from 'lucide-react';
 
 const App: React.FC = () => {
   // Mode: 'input' or 'dashboard'
@@ -24,6 +24,17 @@ const App: React.FC = () => {
   const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]);
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
   const [analysisRefreshKey, setAnalysisRefreshKey] = useState(0);
+
+  // API Quota State
+  const [apiUsage, setApiUsage] = useState(0);
+
+  useEffect(() => {
+    // Subscribe to API usage updates
+    const unsubscribe = onApiUsageUpdate((count) => {
+        setApiUsage(count);
+    });
+    return unsubscribe;
+  }, []);
 
   // Load analysis data when switching to table mode or changing index
   useEffect(() => {
@@ -208,6 +219,20 @@ const App: React.FC = () => {
             {/* Controls (Context sensitive) */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                {/* Global Controls */}
+               <div 
+                 className={`hidden md:flex items-center gap-1 text-[10px] px-3 py-1.5 rounded-lg border font-mono ${
+                    apiUsage > DAILY_QUOTA * 0.9 ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 
+                    apiUsage > DAILY_QUOTA * 0.5 ? 'bg-amber-900/30 text-amber-400 border-amber-800' : 
+                    'bg-slate-800 text-slate-400 border-slate-700'
+                 }`}
+                 title="API Calls vs Daily Quota"
+               >
+                 <Zap className="w-3 h-3" />
+                 <span>{apiUsage}</span>
+                 <span className="opacity-50">/</span>
+                 <span>{DAILY_QUOTA}</span>
+               </div>
+
                <button
                   onClick={handleReset}
                   className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-xs font-bold hover:bg-slate-700 hover:text-white transition-all mr-2 flex items-center gap-2 whitespace-nowrap"
